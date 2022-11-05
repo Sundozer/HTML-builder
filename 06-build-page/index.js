@@ -1,6 +1,5 @@
 const fs = require('fs')
-const path = require('path')
-let textInFile;
+const path = require('path');
 fs.mkdir(path.join(__dirname, 'project-dist'), (err) => {//Создать нужную папку
     // if (err) {
     //     throw err;
@@ -14,41 +13,106 @@ fs.mkdir(path.join(__dirname, 'project-dist'), (err) => {//Создать нуж
         collectFiles()
     });
 
-
 })
+
 function collectFiles() {// посмотреть файлы, из которых собирается
     let p = path.join(__dirname, 'components')
     fs.readdir(p, (err, files) => {
-        files.forEach(file => {
-            console.log('try')
-            read(file)
-        })
-        
-        
+        let i = 0;
+        (function read () {
+            if (i >= files.length) {
+                return;
+            }
+            const queue = new Promise(function(resolve, reject){
+                    let newFile = path.basename(files[i])
+                    let p = path.join(__dirname, 'components', newFile);
+                    fs.readFile(p, 'utf8', function(err, newInf){
+                        let p = path.join(__dirname, 'project-dist', 'template.html');
+                        let name = path.parse(files[i]).name;
+                        fs.readFile(p, 'utf8', function(err, oldInf){     
+                    
+                            let toReplace = `{{${name}}}`;
+                            let replaced = oldInf.replace(toReplace, `${newInf}`);
+                            fs.writeFile(p, replaced, 'utf-8', function (err) {
+                                resolve()
+                            });
+                            
+                        });
+
+                    });
+            }).then(()=>{
+                i++
+                read(files[i])
+            })
+        })(files[0]);
     })
 }
 
-function read (data) {// достать из каждого файла информацию
-    let p = path.join(__dirname, 'components', data);
+fs.readdir(path.join(__dirname, 'styles'), (err, files) => {
+    files.forEach(file => {
+        if (path.extname(file) === '.css') {
+            styles(file)
+        }
+    })
+})
+function styles (data) {
+    let p = path.join(__dirname, 'styles', data)
     fs.readFile(p, 'utf8', function(err, inf){
-        replace(data, inf)
+        let bundle = path.join(__dirname, 'project-dist', 'style.css')
+        fs.appendFile(bundle, inf, (err) => {
+            if (err) {
+              console.log(err);
+            }
+            
+        });
     });
+
 }
 
-function replace(fileName, newInf) {//заменить в основном файле куски на новые
-    let p = path.join(__dirname, 'project-dist', 'template.html');
-    let name = path.parse(fileName).name;
-    let replaced;
 
+
+fs.mkdir(path.join(__dirname, 'project-dist', 'assets'), (err) => {
+    // if (err) {
+    //     throw err;
+    // }
+    let p = path.join(__dirname, 'assets')
     
-    fs.readFile(p, 'utf8', function(err, oldInf){     
 
-        let toReplace = `{{${name}}}`;
-        replaced = oldInf.replace(toReplace, `${newInf}`);
-        fs.writeFile(p, replaced, 'utf-8', function (err) {
-            console.log('res')
-        });
+
+
+    fs.readdir(p,{ withFileTypes: true }, (err, files) => {
+        files.forEach(file => {
+            if (file.isDirectory() === true) {
+                newPath = path.join(p, file.name);
+                let lol = path.basename(newPath);
+                fs.readdir(newPath, (err, files) => {
+                    files.forEach(file => {
+                        copy(lol, file)
+                    })
+                })
+            }
+        })
+    })
+})
+
+
+
+
+
+
+function copy (folder, data) {
+    let newFolder = path.join(__dirname, 'project-dist', 'assets', folder)
+    fs.mkdir(newFolder, (err) => {
+        // if (err) {
+        //     throw err;
+        // }
+    })
+    let oldfolder = path.join(__dirname, 'assets', folder, data)
+    let newF = path.join(newFolder, data)
+    fs.copyFile(oldfolder, newF, (err) => {
+        // if (err) {
+        // throw err;
+        // }
         
     });
-    
 }
