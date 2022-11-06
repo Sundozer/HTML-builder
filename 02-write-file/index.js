@@ -28,3 +28,4 @@ function writeTo (data) {
 
 
 stdin.on('data', data => writeTo(data));
+process.on('exit', () => stdout.write('Goodbye!'));
