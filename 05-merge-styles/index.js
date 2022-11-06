@@ -16,7 +16,6 @@ function read (data) {
             if (err) {
               console.log(err);
             }
-            
         });
     });
 
